@@ -1,3 +1,4 @@
+import { ToastAndroid } from 'react-native';
 import { TodoDTO, todoFromDTO, Todo, CreateTodoParams } from '../models/Todo';
 
 /**
@@ -96,7 +97,11 @@ export const todoApi = {
         updatedAt: new Date(), // Update the updatedAt timestamp
       };
     } catch (error) {
-      console.error('Failed to update todo:', error);
+      ToastAndroid.show(
+        `Please try again. Failed to update todo: ${error}`,
+        ToastAndroid.SHORT,
+      );
+      // console.error('Failed to update todo:', error);
       throw error;
     }
   },

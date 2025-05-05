@@ -62,7 +62,13 @@ export const addTodo = createAsyncThunk(
       const newTodo = createTodo(params, newId);
       
       // Send to API (mostly for demonstration)
-      await todoApi.createTodo(params);
+      // Ignore API responses for created todos since JSONPlaceholder
+      // doesn't truly create them with our desired IDs
+      try {
+        await todoApi.createTodo(params);
+      } catch (apiError) {
+        console.warn('API create failed but continuing with local create:', apiError);
+      }
       
       return newTodo;
     } catch (error) {
@@ -89,11 +95,18 @@ export const toggleTodo = createAsyncThunk(
       const updatedTodo = {
         ...todo,
         completed: !todo.completed,
-        updatedAt: new Date().toISOString(), // Use ISO string
+        updatedAt: new Date().toISOString(),
       };
       
-      // Send to API
-      await todoApi.updateTodo(updatedTodo);
+      // Try to update on API but continue even if it fails
+      // This allows us to update local todos that don't exist on the server
+      try {
+        await todoApi.updateTodo(updatedTodo);
+      } catch (apiError) {
+        // Ignore API errors for locally created todos
+        // This is expected since they don't exist on the server
+        console.warn('API update failed but continuing with local update:', apiError);
+      }
       
       return updatedTodo;
     } catch (error) {
@@ -124,11 +137,18 @@ export const updateTodo = createAsyncThunk(
         ...todo,
         title: title !== undefined ? title : todo.title,
         completed: completed !== undefined ? completed : todo.completed,
-        updatedAt: new Date().toISOString(), // Use ISO string
+        updatedAt: new Date().toISOString(),
       };
       
-      // Send to API
-      await todoApi.updateTodo(updatedTodo);
+      // Try to update on API but continue even if it fails
+      // This allows us to update local todos that don't exist on the server
+      try {
+        await todoApi.updateTodo(updatedTodo);
+      } catch (apiError) {
+        // Ignore API errors for locally created todos
+        // This is expected since they don't exist on the server
+        console.warn('API update failed but continuing with local update:', apiError);
+      }
       
       return updatedTodo;
     } catch (error) {
@@ -144,7 +164,14 @@ export const deleteTodo = createAsyncThunk(
   'todos/deleteTodo',
   async (todoId: number, { rejectWithValue }) => {
     try {
-      await todoApi.deleteTodo(todoId);
+      // Try to delete on API but continue even if it fails
+      try {
+        await todoApi.deleteTodo(todoId);
+      } catch (apiError) {
+        // Ignore API errors for locally created todos
+        console.warn('API delete failed but continuing with local delete:', apiError);
+      }
+      
       return todoId;
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : 'Failed to delete todo');
@@ -201,7 +228,7 @@ const todoSlice = createSlice({
     // Toggle todo reducers
     builder
       .addCase(toggleTodo.pending, (state) => {
-        state.loading = true;
+        // Don't set loading to true during optimistic updates
         state.error = null;
       })
       .addCase(toggleTodo.fulfilled, (state, action) => {
@@ -219,7 +246,7 @@ const todoSlice = createSlice({
     // Update todo reducers
     builder
       .addCase(updateTodo.pending, (state) => {
-        state.loading = true;
+        // Don't set loading to true during optimistic updates
         state.error = null;
       })
       .addCase(updateTodo.fulfilled, (state, action) => {
@@ -237,7 +264,7 @@ const todoSlice = createSlice({
     // Delete todo reducers
     builder
       .addCase(deleteTodo.pending, (state) => {
-        state.loading = true;
+        // Don't set loading to true during optimistic updates
         state.error = null;
       })
       .addCase(deleteTodo.fulfilled, (state, action) => {

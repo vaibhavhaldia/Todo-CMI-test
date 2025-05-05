@@ -1,4 +1,4 @@
-import React, { memo, useState } from 'react';
+import React, { memo, useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -20,6 +20,11 @@ interface TodoItemProps {
 const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle, onDelete, onEdit }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedTitle, setEditedTitle] = useState(todo.title);
+  
+  // Update editedTitle when todo prop changes
+  useEffect(() => {
+    setEditedTitle(todo.title);
+  }, [todo.title]);
   
   // Animation values
   const fadeAnim = React.useRef(new Animated.Value(1)).current;
@@ -44,7 +49,8 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle, onDelete, onEdit })
   };
   
   const handleToggle = () => {
-    // Animate completion
+    // Call toggle immediately for responsiveness
+    onToggle(todo.id);
     Animated.sequence([
       Animated.timing(scaleAnim, {
         toValue: 1.1,
@@ -56,15 +62,17 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle, onDelete, onEdit })
         duration: 150,
         useNativeDriver: true,
       }),
-    ]).start(() => {
-      onToggle(todo.id);
-    });
+    ]).start();
   };
   
   const handleEditSubmit = () => {
-    if (editedTitle.trim() !== '') {
-      onEdit(todo.id, editedTitle);
+    if (editedTitle.trim() !== '' && editedTitle !== todo.title) {
+      // Only call edit if title actually changed
+      onEdit(todo.id, editedTitle.trim());
       setIsEditing(false);
+    } else {
+      // Cancel editing if title didn't change or is empty
+      cancelEditing();
     }
   };
   
@@ -91,6 +99,7 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle, onDelete, onEdit })
       <TouchableOpacity
         style={styles.checkbox}
         onPress={handleToggle}
+        activeOpacity={0.7}
       >
         <View style={[
           styles.checkboxInner,
@@ -108,14 +117,22 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle, onDelete, onEdit })
               value={editedTitle}
               onChangeText={setEditedTitle}
               autoFocus
-              onBlur={cancelEditing}
+              // blurOnSubmit={true}
               onSubmitEditing={handleEditSubmit}
             />
             <View style={styles.editActions}>
-              <TouchableOpacity style={styles.editButton} onPress={handleEditSubmit}>
+              <TouchableOpacity 
+                style={styles.editButton} 
+                onPress={handleEditSubmit}
+                activeOpacity={0.7}
+              >
                 <Text style={styles.editButtonText}>Save</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.editButton} onPress={cancelEditing}>
+              <TouchableOpacity 
+                style={styles.editButton} 
+                onPress={cancelEditing}
+                activeOpacity={0.7}
+              >
                 <Text style={styles.editButtonText}>Cancel</Text>
               </TouchableOpacity>
             </View>
@@ -137,7 +154,11 @@ const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle, onDelete, onEdit })
         )}
       </View>
       
-      <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>
+      <TouchableOpacity 
+        style={styles.deleteButton} 
+        onPress={handleDelete}
+        activeOpacity={0.7}
+      >
         <Text style={styles.deleteButtonText}>×</Text>
       </TouchableOpacity>
     </Animated.View>
